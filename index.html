@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atharva Sabnis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0c0c0c;
+            color: #d8d8d8;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Accent bar at top */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #1B2A4A, #3a5a8a, #1B2A4A);
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 580px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 32px 22px 18px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #1c1c1c;
+            margin-bottom: 16px;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 10px; }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #3a8a5a;
+            box-shadow: 0 0 6px rgba(58, 138, 90, 0.6);
+            flex-shrink: 0;
+        }
+
+        .header h1 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #ffffff;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .header p {
+            font-size: 11px;
+            color: #383838;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            font-weight: 400;
+        }
+
+        /* Messages */
+        .messages-wrap {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .messages-wrap::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 48px;
+            background: linear-gradient(to bottom, transparent, #0c0c0c);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .messages {
+            height: 100%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding-right: 4px;
+            padding-bottom: 28px;
+            scroll-behavior: smooth;
+        }
+
+        .messages::-webkit-scrollbar { width: 2px; }
+        .messages::-webkit-scrollbar-track { background: transparent; }
+        .messages::-webkit-scrollbar-thumb { background: #1e1e1e; border-radius: 2px; }
+
+        .message { display: flex; animation: fadeUp 0.22s ease; }
+        .message.bot  { justify-content: flex-start; }
+        .message.user { justify-content: flex-end;   }
+
+        .bubble {
+            max-width: 80%;
+            padding: 10px 14px;
+            font-size: 14px;
+            line-height: 1.7;
+            border-radius: 16px;
+        }
+
+        .bot .bubble {
+            background: #141414;
+            color: #cccccc;
+            border: 1px solid #1e1e1e;
+            border-bottom-left-radius: 3px;
+            font-weight: 300;
+        }
+
+        .user .bubble {
+            background: #162035;
+            color: #a8c0e0;
+            border: 1px solid #1e2e4a;
+            border-bottom-right-radius: 3px;
+            font-size: 13px;
+            font-weight: 400;
+        }
+
+        /* Typing */
+        .typing-wrap { display: flex; animation: fadeUp 0.18s ease; }
+
+        .typing {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 12px 15px;
+            background: #141414;
+            border: 1px solid #1e1e1e;
+            border-radius: 16px;
+            border-bottom-left-radius: 3px;
+        }
+
+        .typing span {
+            width: 4px; height: 4px;
+            border-radius: 50%;
+            background: #3a3a3a;
+            animation: pulse 1.3s infinite ease-in-out;
+        }
+        .typing span:nth-child(2) { animation-delay: 0.18s; }
+        .typing span:nth-child(3) { animation-delay: 0.36s; }
+
+        @keyframes pulse {
+            0%, 65%, 100% { opacity: 0.2; transform: scale(0.85); }
+            32%            { opacity: 1;   transform: scale(1.15); }
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(5px); }
+            to   { opacity: 1; transform: translateY(0);   }
+        }
+
+        /* Replies */
+        .replies-wrap {
+            padding-top: 12px;
+            border-top: 1px solid #161616;
+            min-height: 44px;
+            flex-shrink: 0;
+        }
+        .replies { display: flex; flex-wrap: wrap; gap: 6px; }
+
+        .reply-btn {
+            background: transparent;
+            color: #686868;
+            border: 1px solid #2c2c2c;
+            padding: 8px 14px;
+            min-height: 36px;
+            border-radius: 20px;
+            font-size: 12.5px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.01em;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .reply-btn:hover {
+            background: #162035;
+            border-color: #1e2e4a;
+            color: #a8c0e0;
+            transform: translateY(-1px);
+        }
+
+        .reply-btn:active {
+            transform: scale(0.97);
+            background: #162035;
+            color: #a8c0e0;
+        }
+
+        .home-btn {
+            color: #404040;
+            border-color: #242424;
+            font-size: 11.5px;
+        }
+
+        .home-btn:hover {
+            background: #161616;
+            border-color: #333;
+            color: #888;
+            transform: none;
+        }
+
+        /* Footer */
+        .footer { padding-top: 10px; display: flex; justify-content: flex-end; }
+
+        .restart-btn {
+            background: none; border: none;
+            color: #333;
+            font-size: 11px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.04em;
+            transition: color 0.2s;
+            padding: 4px 0;
+            touch-action: manipulation;
+        }
+
+        .restart-btn:hover { color: #666; }
+
+        a { color: #4a78b8; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* Mobile */
+        @media (max-width: 600px) {
+            body { align-items: flex-start; }
+
+            .chat-container {
+                padding: 16px 16px 12px;
+                height: 100dvh;
+                height: -webkit-fill-available;
+            }
+
+            .header { padding-bottom: 12px; margin-bottom: 12px; }
+            .header h1 { font-size: 12px; }
+            .header p  { font-size: 10px; }
+
+            .bubble {
+                max-width: 90%;
+                font-size: 14px;
+                padding: 10px 13px;
+            }
+
+            .reply-btn {
+                font-size: 13px;
+                padding: 9px 14px;
+                min-height: 40px;
+            }
+
+            .replies { gap: 7px; }
+            .replies-wrap { padding-top: 10px; }
+        }
+
+        @media (max-width: 380px) {
+            .bubble { max-width: 94%; font-size: 13.5px; }
+            .reply-btn { font-size: 12.5px; padding: 8px 12px; }
+        }
+    </style>
+</head>
+<body>
+<div class="chat-container">
+
+    <div class="header">
+        <div class="header-left">
+            <div class="status-dot"></div>
+            <h1>Atharva Sabnis</h1>
+        </div>
+        <p>Dubai, UAE</p>
+    </div>
+
+    <div class="messages-wrap">
+        <div class="messages" id="messages"></div>
+    </div>
+
+    <div class="replies-wrap">
+        <div class="replies" id="replies"></div>
+    </div>
+
+    <div class="footer">
+        <button class="restart-btn" onclick="restart()">↺ restart</button>
+    </div>
+
+</div>
+<script>
+const data = {
+
+    // INTRO
+    intro: {
+        messages: [
+            "Hey, I'm Atharva.",
+            "Ten years building commercial engines from scratch. AI, Web3, emerging markets. India, US, China, Singapore, Dubai.",
+            "Tell me who you are and I'll make this relevant."
+        ],
+        replies: [
+            { label: "I'm a founder",          next: "founder_intro"   },
+            { label: "I'm a recruiter",         next: "recruiter_intro" },
+            { label: "I'm hiring for a role",   next: "hm_intro"        },
+            { label: "Just exploring",          next: "explore_intro"   }
+        ]
+    },
+
+    // EXPLORE (topic browser for non-persona visitors)
+    explore_intro: {
+        messages: ["Sure. What do you want to dig into?"],
+        replies: [
+            { label: "Quick overview",     next: "quick_overview"        },
+            { label: "Marketing",          next: "marketing_main"        },
+            { label: "Growth",             next: "growth_main"           },
+            { label: "BD & Partnerships",  next: "bd_main"               },
+            { label: "Innovation",         next: "innovation_main"       },
+            { label: "Entrepreneurship",   next: "entrepreneurship_main" },
+            { label: "Recognition",        next: "recognition"           },
+            { label: "Get in touch",       next: "contact"               }
+        ]
+    },
+
+    // FOUNDER BRANCH
+    founder_intro: {
+        messages: [
+            "I'll skip the corporate version.",
+            "I've been building since I graduated. Fractal Media — in-taxi infotainment across Mumbai, against Uber and Ola resistance. Atron Digital — concept-sold AI compliance to Abbott and Taj Hotels, scaled to roughly $1M, exited before COVID. NFT Labs — IP licensing with Tottenham Hotspur, AS Roma, and Reliance Entertainment. MarketWind — quant market-making, INR 15 Cr+ in revenue.",
+            "On the commercial side: 4+ years at Fractal Analytics as the first hire on Eugenie AI — built GTM from zero, $6M ARR pipeline, Google I/O 2024 feature. Currently running growth and GTM at Reflexical, a Dubai and Singapore AI venture studio.",
+            "What's most relevant to you?"
+        ],
+        replies: [
+            { label: "What have you built?",          next: "entrepreneurship_main" },
+            { label: "What kind of deals have you closed?", next: "bd_ip"          },
+            { label: "Who's in your network in Dubai?", next: "founder_network"    },
+            { label: "What are you working on now?",  next: "founder_current"      },
+            { label: "Let's talk",                    next: "contact"              }
+        ]
+    },
+
+    founder_network: {
+        messages: [
+            "In Dubai I founded the Dubai Magic Circle — an invite-only forum for founders, institutional investors, and C-suite operators. Not a networking event. A peer group with a high bar for entry.",
+            "Through Reflexical I have active relationships with Antler Singapore, LongHash Ventures, and Draper University. We pull deal flow through RIT, IIT Bombay, and University of Pune. I was also at a Davos WEF Roundtable last year.",
+            "The network is genuinely useful. I make introductions when they're worth making."
+        ],
+        replies: [
+            { label: "What have you built?",               next: "entrepreneurship_main" },
+            { label: "What kind of deals have you closed?", next: "bd_ip"               },
+            { label: "What are you working on now?",        next: "founder_current"      },
+            { label: "Let's talk",                          next: "contact"              }
+        ]
+    },
+
+    founder_current: {
+        messages: [
+            "At Reflexical I'm running GTM for two AI portfolio companies. RhinoSpider — AI data infrastructure. Sigli.ai — neobank for AI agents. Pre-revenue to first commercial traction.",
+            "Separately, MarketWind — the quant market-making operation — is running quietly on CoinDCX. Not something I lead with, but it's there.",
+            "I'm also exploring what's next. If you're building something interesting in AI or emerging tech, I'm open to the conversation."
+        ],
+        replies: [
+            { label: "What have you built?",               next: "entrepreneurship_main" },
+            { label: "What kind of deals have you closed?", next: "bd_main"              },
+            { label: "Who's in your network?",              next: "founder_network"      },
+            { label: "Let's talk",                          next: "contact"              }
+        ]
+    },
+
+    // RECRUITER BRANCH
+    recruiter_intro: {
+        messages: [
+            "Here's the quick picture.",
+            "10 years in GTM, growth, and BD. Most recently Head of Growth & GTM at Reflexical, a Dubai and Singapore AI venture studio. Before that, 4.5 years at Fractal Analytics as their first commercial hire — built GTM from zero, grew a $6M ARR enterprise pipeline across the US, LATAM, India, and GCC.",
+            "Senior IC and player-coach profile. B.Sc. Finance, Rochester Institute of Technology. IIM Ahmedabad AGMP starting this year. Based in Dubai, UAE. Open to Abu Dhabi."
+        ],
+        replies: [
+            { label: "What functions have you led?",  next: "recruiter_functions"  },
+            { label: "Industries and companies?",      next: "recruiter_background" },
+            { label: "Key achievements?",              next: "recognition"          },
+            { label: "What are you looking for?",      next: "looking"              },
+            { label: "Contact details",                next: "contact"              }
+        ]
+    },
+
+    recruiter_functions: {
+        messages: [
+            "Primarily GTM, demand generation, and growth marketing. I build the full motion: ICP definition, messaging frameworks, demand gen programs, pipeline workflows, and cross-functional alignment to make it stick.",
+            "Also strong in BD and strategic partnerships — tech partnerships (Microsoft, GCP, AWS, NVIDIA), IP licensing (Tottenham Hotspur, AS Roma, Reliance Entertainment), and market entry (RSM MENA, DFSA).",
+            "Budget management up to $200K annually. Two Gartner Magic Quadrant inclusions via sustained analyst relations. Direct experience managing enterprise sales cycles targeting Fortune 500 CTOs, CDOs, and VP Operations."
+        ],
+        replies: [
+            { label: "Industries and companies?",  next: "recruiter_background" },
+            { label: "Key achievements?",           next: "recognition"          },
+            { label: "What are you looking for?",   next: "looking"              },
+            { label: "Contact details",             next: "contact"              }
+        ]
+    },
+
+    recruiter_background: {
+        messages: [
+            "Primary industry: enterprise AI and B2B SaaS. Most recent employer: Fractal Analytics — Fortune 500-serving enterprise AI firm. Also have Web3 (NFT Labs), AI fintech (IN-D.ai), and consumer tech (Atron Digital) experience.",
+            "Geography: India (early career, multiple ventures), US (RIT, IB internship Miami, conference presence), China (IB internship Shanghai, GWA Asia), Singapore (Reflexical Pte Ltd, Antler), Dubai (current base, 5+ years).",
+            "Company stages: 0-to-1 startup (first commercial hire at Eugenie AI), venture studio (Reflexical), and founder (Atron Digital, NFT Labs, Fractal Media, MarketWind)."
+        ],
+        replies: [
+            { label: "Key achievements?",         next: "recognition" },
+            { label: "What are you looking for?", next: "looking"     },
+            { label: "Contact details",            next: "contact"    }
+        ]
+    },
+
+    // HIRING MANAGER BRANCH
+    hm_intro: {
+        messages: [
+            "Let's make this specific to what you're hiring for.",
+            "What function is the role?"
+        ],
+        replies: [
+            { label: "GTM / Demand Generation", next: "hm_gtm"         },
+            { label: "Marketing",               next: "hm_marketing"   },
+            { label: "Growth",                  next: "hm_growth"      },
+            { label: "BD / Partnerships",       next: "hm_bd"          },
+            { label: "Not sure — show me everything", next: "quick_overview" }
+        ]
+    },
+
+    hm_gtm: {
+        messages: [
+            "GTM is where most of my serious work has happened. At Fractal Analytics I was the first commercial hire on Eugenie AI — no playbook, no team, no pipeline.",
+            "What came out of it: $6M ARR enterprise pipeline across 50+ accounts in the US, LATAM, India, and GCC. Two Gartner Magic Quadrant inclusions. Google I/O 2024 feature. TechCrunch coverage. $200K annual budget.",
+            "Buyers were CTOs, CDOs, and VP Operations at Fortune 500s in energy (ExxonMobil, Rio Tinto), manufacturing (Tata Steel, CEMEX Ventures), and financial services. I coordinated across sales, product, and solution engineering — the motion only works if those teams are aligned."
+        ],
+        replies: [
+            { label: "How did you build the pipeline?",       next: "growth_pipeline" },
+            { label: "How did you handle multiple markets?",   next: "growth_geo"      },
+            { label: "Tell me about cross-functional work",    next: "hm_crossfunc"    },
+            { label: "What tools do you use?",                 next: "growth_tools"    },
+            { label: "Get in touch",                           next: "contact"         }
+        ]
+    },
+
+    hm_marketing: {
+        messages: [
+            "I've owned marketing end-to-end at Fractal Analytics — brand narrative, analyst relations, demand gen, field marketing, PR, and budget. Built the function from scratch as the first commercial hire.",
+            "The output: two Gartner Magic Quadrant inclusions, a Google I/O 2024 feature, TechCrunch coverage, UN Global Compact selection, and Middle East press coverage that directly supported a GCC market entry deal.",
+            "I also know what it takes to get a product in front of the right analysts, the right press, and the right buyers at the same time. That coordination is the hardest part."
+        ],
+        replies: [
+            { label: "How did the Google I/O feature happen?", next: "marketing_googleio"  },
+            { label: "Tell me about the Gartner work",         next: "marketing_gartner"   },
+            { label: "What did demand gen look like?",         next: "marketing_demandgen" },
+            { label: "Tell me about cross-functional work",    next: "hm_crossfunc"        },
+            { label: "Get in touch",                           next: "contact"             }
+        ]
+    },
+
+    hm_growth: {
+        messages: [
+            "I've built growth programs from zero twice. At Fractal Analytics, I defined ICP, built messaging, set up the pipeline infrastructure, and ran the demand gen motion that resulted in a $6M ARR enterprise pipeline.",
+            "Right now at Reflexical, I'm running GTM for two AI portfolio companies from pre-revenue to first traction. Different context — earlier stage, smaller team, no established brand — but the same discipline: find the right buyers, build the right message, close.",
+            "The number I'm proudest of is the pipeline multiple. We grew from zero to $6M ARR in a market where most competitors had five-year head starts."
+        ],
+        replies: [
+            { label: "What does your pipeline process look like?", next: "growth_pipeline" },
+            { label: "Tell me about multi-geography expansion",    next: "growth_geo"       },
+            { label: "What tools do you use?",                     next: "growth_tools"     },
+            { label: "Tell me about cross-functional work",        next: "hm_crossfunc"     },
+            { label: "Get in touch",                               next: "contact"          }
+        ]
+    },
+
+    hm_bd: {
+        messages: [
+            "My BD work spans strategic partnerships, ecosystem development, and large-account acquisition. I don't separate BD from growth — the best commercial results I've seen come from integrating them.",
+            "Technology partnerships: Microsoft and GCP co-sell at Fractal, AWS at IN-D.ai, NVIDIA at NFT Labs. Market entry: DFSA for DIFC access, RSM MENA for GCC. IP licensing: Tottenham Hotspur, AS Roma, Reliance Entertainment — all cold closes.",
+            "I also founded the Dubai Magic Circle, which has become a genuine deal flow channel in the GCC. And through Reflexical I manage ongoing relationships with Antler, LongHash Ventures, and Draper University."
+        ],
+        replies: [
+            { label: "Tell me about the IP licensing deals",  next: "bd_ip"       },
+            { label: "Tell me about tech partnerships",       next: "bd_tech"      },
+            { label: "Tell me about the Dubai Magic Circle",  next: "bd_circle"    },
+            { label: "Tell me about cross-functional work",   next: "hm_crossfunc" },
+            { label: "Get in touch",                          next: "contact"      }
+        ]
+    },
+
+    hm_crossfunc: {
+        messages: [
+            "At Fractal I sat at the intersection of sales, product, and solution engineering. I brought field intelligence from ADIPEC, GITEX, COP28, and OPES back to the product team — not filed away, but translated into positioning updates, competitive responses, and roadmap inputs.",
+            "I built the messaging infrastructure that sales needed to have credible conversations with technical buyers. That meant working with solution engineers on demo scripts and with product on competitive positioning — not just handing them a deck.",
+            "At Reflexical it's different. I coordinate across the founding team, portfolio founders, and syndicate investors. Closer to a COO function in some ways. The skill is the same: making sure the right information reaches the right people at the right time."
+        ],
+        replies: [
+            { label: "Tell me about the pipeline numbers",    next: "growth_pipeline"  },
+            { label: "Tell me about multi-market work",       next: "growth_geo"       },
+            { label: "Tell me about marketing specifically",  next: "marketing_main"   },
+            { label: "Tell me about BD",                      next: "bd_main"          },
+            { label: "Get in touch",                          next: "contact"          }
+        ]
+    },
+
+    // QUICK OVERVIEW
+    quick_overview: {
+        messages: [
+            "Ten years in commercial roles across AI, Web3, and emerging markets. Started in India, worked across the US, China, and Singapore, based in Dubai now.",
+            "The deepest chapter was Fractal Analytics, where I joined Eugenie AI as their first commercial hire and built the whole GTM motion from scratch. That resulted in a $6M ARR enterprise pipeline, two Gartner Magic Quadrant inclusions, and a Google I/O 2024 feature.",
+            "Before and around that: co-founded and exited two ventures in India, ran IP licensing BD for NFT Labs (Tottenham Hotspur, AS Roma, Reliance Entertainment), and I'm currently at Reflexical, a Dubai and Singapore AI venture studio, running growth and GTM.",
+            "I'm looking for senior GTM, growth, marketing, or partnerships roles at AI or innovation-led companies. Happy to go deeper on any of this."
+        ],
+        replies: [
+            { label: "Marketing",          next: "marketing_main"        },
+            { label: "Growth",             next: "growth_main"           },
+            { label: "BD & Partnerships",  next: "bd_main"               },
+            { label: "Entrepreneurship",   next: "entrepreneurship_main" },
+            { label: "Get in touch",       next: "contact"               }
+        ]
+    },
+
+    // RECOGNITION
+    recognition: {
+        messages: [
+            "External validation that I'm proud of: Google I/O 2024 feature for Eugenie AI. Two Gartner Magic Quadrant inclusions. TechCrunch coverage. Selected into the UN Global Compact. Davos WEF Roundtable. Y Combinator W2019 finalist. JLL Proptech Top 50.",
+            "On education: B.Sc. Finance with Honours, Rochester Institute of Technology, Dean's List. Starting the Advanced General Management Programme at IIM Ahmedabad this year.",
+            "Fellowships and programs: Antler Singapore Founders Program, Draper University, a16z Startup School, YC Startup School, GrowthX PLG Diploma. The through-line is early access to how the best builders think."
+        ],
+        replies: [
+            { label: "Tell me about Marketing",      next: "marketing_main"        },
+            { label: "Tell me about Growth",         next: "growth_main"           },
+            { label: "Tell me about BD",             next: "bd_main"               },
+            { label: "Tell me about Entrepreneurship", next: "entrepreneurship_main"},
+            { label: "Get in touch",                 next: "contact"               }
+        ]
+    },
+
+    // MARKETING
+    marketing_main: {
+        messages: [
+            "The most serious marketing work I've done was at Fractal Analytics. I joined Eugenie AI as their first commercial hire. No team, no pipeline, no brand. Just a product that needed a market.",
+            "I built the whole function from scratch: ICP definition, messaging frameworks by vertical, analyst relations with Gartner and Forrester, demand gen, field marketing at ADIPEC, GITEX, COP28, OPES. Ran a $200K annual budget.",
+            "What came out of it: two Gartner Magic Quadrant inclusions, a Google I/O 2024 feature, TechCrunch coverage, and a $6M ARR enterprise pipeline targeting CTOs, CDOs, and VP Operations at Fortune 500s across the US, LATAM, India, and GCC."
+        ],
+        replies: [
+            { label: "How did the Google I/O feature happen?", next: "marketing_googleio"  },
+            { label: "Tell me about the Gartner work",         next: "marketing_gartner"   },
+            { label: "What did demand gen look like?",         next: "marketing_demandgen" },
+            { label: "Other marketing experience?",            next: "marketing_other"     }
+        ]
+    },
+
+    marketing_googleio: {
+        messages: [
+            "That didn't just happen. I'd been building Eugenie's narrative as a serious enterprise AI product for over two years. Consistent positioning, sustained analyst engagement, GCP as a technology partner.",
+            "When Google was selecting companies to feature at I/O 2024, Eugenie was already on their radar. I'd made sure of that.",
+            "Same year Eugenie got selected into the UN Global Compact. TechCrunch picked up the story. When third-party validation stacks like that, it changes how enterprise buyers respond to your outreach. Cycles get shorter, deal sizes get bigger."
+        ],
+        replies: [
+            { label: "Tell me about the Gartner work",  next: "marketing_gartner"   },
+            { label: "What did demand gen look like?",  next: "marketing_demandgen" },
+            { label: "Other marketing experience?",     next: "marketing_other"     },
+            { label: "Tell me about Growth",            next: "growth_main"         }
+        ]
+    },
+
+    marketing_gartner: {
+        messages: [
+            "Getting into the Gartner Magic Quadrant isn't a pitch. Gartner doesn't take those. It's about building sustained market presence over multiple quarters until their analysts take you seriously.",
+            "I ran a structured analyst relations program for two years at Fractal. Regular briefings, contributed research, consistent narrative across every touchpoint. Two MQ inclusions came out of it.",
+            "For an enterprise AI startup competing against bigger names with larger budgets, that's a real sales accelerator. Buyers already know the name when you reach out. You skip the credibility-building part of the conversation."
+        ],
+        replies: [
+            { label: "How did the Google I/O feature happen?", next: "marketing_googleio"  },
+            { label: "What did demand gen look like?",         next: "marketing_demandgen" },
+            { label: "Other marketing experience?",            next: "marketing_other"     },
+            { label: "Tell me about Growth",                   next: "growth_main"         }
+        ]
+    },
+
+    marketing_demandgen: {
+        messages: [
+            "At Eugenie, we ran account-based everything. We weren't targeting personas in the abstract. We knew exactly which companies we wanted, who the buyers were at each one, and what they cared about by vertical.",
+            "I built content tracks per vertical, field presence at major industry events, and a feedback loop where market intelligence from conferences like ADIPEC fed directly into product positioning and sales collateral within days, not months.",
+            "Tools: Salesforce and HubSpot for pipeline, GA4 and Looker Studio for attribution. Lately I've been building with Clay, Apollo.io, and doing a lot of prompt engineering to generate sales plays and campaign copy at scale. AI-native GTM is a different gear."
+        ],
+        replies: [
+            { label: "Tell me about the Gartner work", next: "marketing_gartner" },
+            { label: "Other marketing experience?",    next: "marketing_other"   },
+            { label: "Tell me about Growth",           next: "growth_main"       },
+            { label: "What are you looking for?",      next: "looking"           }
+        ]
+    },
+
+    marketing_other: {
+        messages: [
+            "At NFT Labs I built thought leadership positioning in the Web3 space. Spoke at NFTNYC, NFT LA, Miami NFT Week, IEEE Blockchain Forum. That visibility was a big part of how we got Tottenham Hotspur and Reliance Entertainment to take the call.",
+            "At Reflexical I've been applying AI and GEO tools to content marketing for our portfolio companies. How LLMs discover and surface brands is a genuinely different problem from traditional SEO. Most companies haven't caught up yet. I'm building for that.",
+            "Also have a press track record from Eugenie. We got Middle East tech media coverage in 2024 that directly supported the RSM MENA market entry deal. When PR is tied to a commercial outcome, it's worth doing well."
+        ],
+        replies: [
+            { label: "Tell me about Growth",           next: "growth_main"           },
+            { label: "Tell me about BD",               next: "bd_main"               },
+            { label: "Tell me about Entrepreneurship", next: "entrepreneurship_main" },
+            { label: "What are you looking for?",      next: "looking"               }
+        ]
+    },
+
+    // GROWTH
+    growth_main: {
+        messages: [
+            "Growth has always meant building pipelines where none existed. At Fractal Analytics I took Eugenie AI from zero commercial presence to a $6M ARR enterprise pipeline across 50+ accounts in the US, LATAM, India, and GCC.",
+            "Right now at Reflexical I'm running GTM for two AI portfolio companies. Sigli.ai hit 4 B2B customers within 6 months of launch. RhinoSpider landed 2 enterprise partnerships from scratch.",
+            "My preference is to build systems rather than run campaigns. ICP, sales play architecture, pipeline tooling, cross-functional alignment. Infrastructure that compounds over time."
+        ],
+        replies: [
+            { label: "What does your pipeline process look like?", next: "growth_pipeline" },
+            { label: "Tell me about multi-geography expansion",    next: "growth_geo"      },
+            { label: "What tools do you use?",                     next: "growth_tools"    },
+            { label: "Tell me about BD",                           next: "bd_main"         }
+        ]
+    },
+
+    growth_pipeline: {
+        messages: [
+            "I always start with ICP. Most teams skip this and wonder why nothing converts. At Eugenie I spent three months defining exactly who we were selling to before any outbound motion went live. Vertical, company size, buying committee, trigger events.",
+            "From there: persona mapping, messaging by vertical, sequencing logic. The thing that consistently moved the needle at enterprise was combining field presence with direct outreach. Market intelligence from ADIPEC or GITEX translated into positioning updates within days.",
+            "I also coordinate tightly across sales, product, and solution engineering. The GTM motion only works if messaging, pipeline targets, and campaign delivery are actually aligned. That cross-functional discipline is something I've been deliberate about."
+        ],
+        replies: [
+            { label: "Tell me about multi-geography expansion", next: "growth_geo"    },
+            { label: "What tools do you use?",                  next: "growth_tools"  },
+            { label: "Tell me about Marketing",                 next: "marketing_main"},
+            { label: "What are you looking for?",               next: "looking"       }
+        ]
+    },
+
+    growth_geo: {
+        messages: [
+            "At Fractal I was running market entry across four geographies at the same time. US: ExxonMobil, Coca-Cola, Jabil. LATAM: Rio Tinto, Nexa Resources, CEMEX Ventures. India: Tata Steel, Vedanta Resources. And GCC. Each had a completely different buying process.",
+            "US was analyst-driven. Gartner mattered, procurement cycles were long. GCC was relationship-led, event presence mattered. LATAM needed local channel partners. You don't run the same playbook in all four.",
+            "Before Fractal, I was doing MENA and European market entry simultaneously at IN-D.ai. Secured DFSA approval for DIFC access, established AWS as the infrastructure partner, and landed AI pilots with European banking institutions. And earlier than that, IB work in Shanghai and PE work in Miami."
+        ],
+        replies: [
+            { label: "Tell me about the pipeline process", next: "growth_pipeline" },
+            { label: "Tell me about BD",                   next: "bd_main"         },
+            { label: "Tell me about Marketing",            next: "marketing_main"  },
+            { label: "What are you looking for?",          next: "looking"         }
+        ]
+    },
+
+    growth_tools: {
+        messages: [
+            "Core stack: Salesforce and HubSpot for CRM and pipeline. GA4 and Looker Studio for attribution. Marketo for email workflows.",
+            "The newer part: Clay for data enrichment and sequencing, Apollo.io for outbound, and prompt engineering to generate sales plays and campaign copy at scale. AI-native GTM is meaningfully faster if you know how to use it.",
+            "For market intelligence: CB Insights and Crunchbase Pro for competitive and funding signals, Meltwater for media monitoring. The toolstack is the easy part. Knowing when to run ABM versus broad demand gen, how to balance inbound and outbound — that's the judgment that actually moves numbers."
+        ],
+        replies: [
+            { label: "Tell me about multi-geography expansion", next: "growth_geo"    },
+            { label: "Tell me about Marketing",                 next: "marketing_main"},
+            { label: "Tell me about BD",                        next: "bd_main"       },
+            { label: "What are you looking for?",               next: "looking"       }
+        ]
+    },
+
+    // BD & PARTNERSHIPS
+    bd_main: {
+        messages: [
+            "My BD work splits into two types: strategic partnerships that change a product's commercial trajectory, and ecosystem relationships that create compounding deal flow over time.",
+            "Partnership highlights: DFSA for regulated DIFC market access at IN-D.ai. Microsoft and GCP co-sell at Fractal. NVIDIA at NFT Labs. AWS at IN-D.ai. RSM MENA as our GCC market entry vehicle for Eugenie AI.",
+            "On the ecosystem side: Reflexical's accelerator partnerships with Antler Singapore, LongHash Ventures, and Draper University. And the Dubai Magic Circle, a senior forum I founded that sits at the intersection of GCC founders, institutional investors, and strategic partners."
+        ],
+        replies: [
+            { label: "Tell me about the IP licensing deals", next: "bd_ip"      },
+            { label: "Tell me about the Dubai Magic Circle", next: "bd_circle"  },
+            { label: "Tell me about tech partnerships",      next: "bd_tech"    },
+            { label: "Tell me about Growth",                 next: "growth_main"}
+        ]
+    },
+
+    bd_ip: {
+        messages: [
+            "NFT Labs was built on IP licensing. The thesis was that sports clubs and entertainment companies had IP that engaged fans wanted to own in digital form. I had to convince those rights holders to partner with a startup.",
+            "I cold-closed Tottenham Hotspur and AS Roma. No warm introductions. Direct outreach, persistent follow-through, and a pitch that made the commercial case clearly enough that they said yes. Same approach for Reliance Entertainment, India's largest film studio. That one took longer. Multiple stakeholders, more complex deal structure.",
+            "Those three closes gave us 50,000 users and NVIDIA as a technology partner. They also taught me more about enterprise BD than almost anything else I've done."
+        ],
+        replies: [
+            { label: "Tell me about the Dubai Magic Circle", next: "bd_circle"           },
+            { label: "Tell me about tech partnerships",      next: "bd_tech"             },
+            { label: "Tell me about Entrepreneurship",       next: "entrepreneurship_main"},
+            { label: "What are you looking for?",            next: "looking"             }
+        ]
+    },
+
+    bd_circle: {
+        messages: [
+            "The Dubai Magic Circle came from a gap I noticed. There was no senior peer forum in Dubai where founders, institutional investors, and C-suite operators actually mixed well. Most networking events are too junior or too transactional.",
+            "I built it as invite-only. The criteria for membership: you're either building something real, deploying capital at scale, or running a meaningful function at a significant company. The quality of conversation is the product.",
+            "It's become a genuine deal flow and partnership channel. It also led to a Davos Roundtable invitation alongside WEF. That kind of network compounds in ways that are hard to put on a slide deck."
+        ],
+        replies: [
+            { label: "Tell me about the IP licensing deals", next: "bd_ip"              },
+            { label: "Tell me about tech partnerships",      next: "bd_tech"            },
+            { label: "Recognition & credentials",            next: "recognition"        },
+            { label: "Get in touch",                         next: "contact"            }
+        ]
+    },
+
+    bd_tech: {
+        messages: [
+            "Technology partnerships are different from sales. You're aligning two companies' roadmaps and go-to-market motions, not just closing a contract. The relationship has to work operationally after the deal is signed.",
+            "At Fractal I negotiated Microsoft and GCP co-sell relationships for Eugenie AI. Those gave us joint pipeline access, credibility with enterprise buyers, and entry into the cloud providers' own sales motions — a meaningful accelerant for a startup going up against established players.",
+            "At IN-D.ai, the AWS partnership mattered because regulated financial services clients had existing AWS enterprise agreements. Infrastructure alignment removed a procurement objection. At Reflexical, I structured academic partnerships with RIT, IIT Bombay, and University of Pune for deal flow into the accelerator."
+        ],
+        replies: [
+            { label: "Tell me about the IP licensing deals", next: "bd_ip"        },
+            { label: "Tell me about Growth",                 next: "growth_main"  },
+            { label: "Tell me about Marketing",              next: "marketing_main"},
+            { label: "What are you looking for?",            next: "looking"       }
+        ]
+    },
+
+    // INNOVATION
+    innovation_main: {
+        messages: [
+            "I've spent most of my career on the commercial side of things that were considered early. Enterprise AI before it was mainstream. Web3 before the hype cycle. AI agents now.",
+            "At Fractal I was commercializing industrial AI for energy and manufacturing. The buyers were Fortune 500 CTOs who needed to understand ROI before most of their companies had run a single AI pilot.",
+            "At Reflexical right now I'm running GTM for RhinoSpider, an AI data infrastructure platform, and Sigli.ai, a neobank for AI agents. A year ago most people hadn't heard of agentic finance. The commercial playbooks for this are still being written."
+        ],
+        replies: [
+            { label: "Tell me about your AI work",       next: "innovation_ai"         },
+            { label: "Tell me about Web3",               next: "innovation_web3"       },
+            { label: "Tell me about the quant business", next: "innovation_quant"      },
+            { label: "Tell me about Entrepreneurship",   next: "entrepreneurship_main" }
+        ]
+    },
+
+    innovation_ai: {
+        messages: [
+            "I've been selling AI since 2019. At IN-D.ai the product was document intelligence for financial services. I was doing enterprise AI sales in MENA and Europe before most companies in the region had an AI strategy.",
+            "At Fractal the product was Eugenie AI. Industrial AI for predictive operations in energy and manufacturing. Selling it required translating machine learning outputs into business outcomes that a VP Operations at ExxonMobil would actually care about. That's a specific skill.",
+            "Now at Reflexical I'm on the other side. GTM for AI infrastructure and AI-native fintech. The commercial challenges are harder in some ways: buyers are earlier in their understanding, the product categories are newer, the positioning work is less templated. That's the interesting part."
+        ],
+        replies: [
+            { label: "Tell me about Web3",         next: "innovation_web3"      },
+            { label: "Tell me about BD",           next: "bd_main"              },
+            { label: "Tell me about Growth",       next: "growth_main"          },
+            { label: "What are you looking for?",  next: "looking"              }
+        ]
+    },
+
+    innovation_web3: {
+        messages: [
+            "NFT Labs was a bet that IP tokenization had a real future in sports and entertainment. We were right about the concept and early on the timing. The market collapsed in 2022. But we still built 50,000 users, closed IP deals with two EPL clubs and India's largest film studio, and brought in NVIDIA as a technology partner.",
+            "I spoke at NFTNYC, NFT LA, Miami NFT Week, and IEEE Blockchain Forum. Genuine positioning in that space, not surface-level. We were focused on institutional IP, not consumer collectibles.",
+            "At Reflexical, the Web3 angle is different now. RhinoSpider is building AI data infrastructure. It's institutional, technical, and far from the hype cycle. Different era."
+        ],
+        replies: [
+            { label: "Tell me about your AI work",       next: "innovation_ai"         },
+            { label: "Tell me about the quant business", next: "innovation_quant"      },
+            { label: "Tell me about Entrepreneurship",   next: "entrepreneurship_main" },
+            { label: "What are you looking for?",        next: "looking"               }
+        ]
+    },
+
+    innovation_quant: {
+        messages: [
+            "MarketWind is something I've been running quietly on the side. Quant market-making on CoinDCX. Algorithmic strategies, systematic execution, nothing discretionary.",
+            "We crossed INR 15 crore in revenue over a few years. Lean operation. Running it required understanding market microstructure at a level most people who talk about crypto never reach.",
+            "I don't lead with this in most professional contexts, but it sits at the intersection of my finance background — RIT, IB internship in Shanghai, PE internship in Miami — and my interest in emerging financial infrastructure. It's been running quietly alongside everything else."
+        ],
+        replies: [
+            { label: "Tell me about your AI work",       next: "innovation_ai"         },
+            { label: "Tell me about Web3",               next: "innovation_web3"       },
+            { label: "Tell me about Entrepreneurship",   next: "entrepreneurship_main" },
+            { label: "What are you looking for?",        next: "looking"               }
+        ]
+    },
+
+    // ENTREPRENEURSHIP
+    entrepreneurship_main: {
+        messages: [
+            "I've been building things since I graduated from RIT. First was Fractal Media right out of college. In-taxi infotainment across Mumbai, against active resistance from Uber and Ola. You figure things out.",
+            "Then Atron Digital. Concept-sold AI compliance software to Abbott and Taj Hotels, scaled to roughly $1M revenue, exited before COVID. Then NFT Labs. IP licensing with Tottenham Hotspur, AS Roma, and Reliance Entertainment, 50K users. Separately, MarketWind — quant market-making at INR 15 Cr+ revenue.",
+            "The current chapter is Reflexical, a Web3 and AI venture studio in Dubai. I run growth and GTM. The through-line across all of it: I close things other people find too hard to start."
+        ],
+        replies: [
+            { label: "Tell me about Fractal Media", next: "entrepreneurship_fractalmedia"},
+            { label: "Tell me about Atron Digital", next: "entrepreneurship_atron"       },
+            { label: "Tell me about NFT Labs",      next: "entrepreneurship_nft"         },
+            { label: "Tell me about MarketWind",    next: "innovation_quant"             },
+            { label: "Get in touch",                next: "contact"                      }
+        ]
+    },
+
+    entrepreneurship_fractalmedia: {
+        messages: [
+            "Fractal Media was my first real education in what distribution actually means. Right after RIT I moved back to India and started deploying in-taxi infotainment hardware in Ola and Uber aggregator cabs across Mumbai.",
+            "Uber and Ola weren't interested in helping. They actively resisted third-party hardware in their networks. So I went around them and worked directly with independent aggregator fleets. Got systems into hundreds of cabs.",
+            "The taxi-top advertising network was a separate challenge entirely. Navigating Mumbai Police and the RTO to get permits that most people would have given up on. I ended up partnering with India's largest taxi union, which gave us regulatory cover and fleet access at the same time. That's usually how it goes."
+        ],
+        replies: [
+            { label: "Tell me about Atron Digital", next: "entrepreneurship_atron"       },
+            { label: "Tell me about NFT Labs",      next: "entrepreneurship_nft"         },
+            { label: "Tell me about BD",            next: "bd_main"                      },
+            { label: "What are you looking for?",   next: "looking"                      }
+        ]
+    },
+
+    entrepreneurship_atron: {
+        messages: [
+            "Atron Digital was a concept sell from day one. We were selling a product that didn't fully exist yet to buyers who didn't know they needed it. That's the hardest kind of selling.",
+            "I started in pharma because the compliance burden is enormous and the budget is there. First client was Abbott. Got Indian FDA workflow inclusion, which gave us legitimate proof of concept. Then expanded into hospitality — Taj Hotels, Parle.",
+            "We hit roughly $1M in revenue, made it to the Y Combinator W2019 finalist round, and landed on JLL's Proptech Top 50. I exited at the start of COVID when the market froze. Clean exit. I'd build something like that again."
+        ],
+        replies: [
+            { label: "Tell me about Fractal Media", next: "entrepreneurship_fractalmedia"},
+            { label: "Tell me about NFT Labs",      next: "entrepreneurship_nft"         },
+            { label: "Tell me about Growth",        next: "growth_main"                  },
+            { label: "What are you looking for?",   next: "looking"                      }
+        ]
+    },
+
+    entrepreneurship_nft: {
+        messages: [
+            "NFT Labs was built on one thesis: sports clubs and entertainment companies had IP that the most engaged fans wanted to own in some form. We were right. The execution was harder than expected.",
+            "I cold-closed Tottenham Hotspur, AS Roma, and Reliance Entertainment. No warm introductions. Direct outreach, clear pitch, persistence. NVIDIA came on as a technology partner. We built 50,000 users.",
+            "I spoke at NFTNYC, NFT LA, Miami NFT Week, IEEE Blockchain Forum. The market went sideways in 2022 along with everything else in that cycle. But those cold closes were a masterclass in enterprise BD. I wouldn't trade that experience."
+        ],
+        replies: [
+            { label: "Tell me about Fractal Media", next: "entrepreneurship_fractalmedia"},
+            { label: "Tell me about Atron Digital", next: "entrepreneurship_atron"       },
+            { label: "Tell me about BD",            next: "bd_main"                      },
+            { label: "What are you looking for?",   next: "looking"                      }
+        ]
+    },
+
+    // LOOKING
+    looking: {
+        messages: [
+            "Senior roles in GTM, growth, marketing, or strategic partnerships in AI, tech, or innovation-led companies.",
+            "I'm drawn to roles where I'm building, not just managing. The best version of my work happens when there's a hard commercial problem and real room to solve it.",
+            "Based in Dubai, open to Abu Dhabi, and comfortable working across MENA, US, Europe, and APAC. Finance-trained (RIT), IIM Ahmedabad AGMP starting this year."
+        ],
+        replies: [
+            { label: "Marketing",          next: "marketing_main"        },
+            { label: "Growth",             next: "growth_main"           },
+            { label: "BD & Partnerships",  next: "bd_main"               },
+            { label: "Recognition",        next: "recognition"           },
+            { label: "Get in touch",       next: "contact"               }
+        ]
+    },
+
+    // CONTACT
+    contact: {
+        messages: [
+            "Best way to reach me:",
+            "✉ thesabnis@gmail.com\n🔗 linkedin.com/in/atharvasabnis\n📍 Dubai, UAE · +971 55 116 6906",
+            "Background: B.Sc. Finance, Rochester Institute of Technology (Dean's List). IIM Ahmedabad AGMP, commencing 2026. Antler Singapore, Draper University, a16z Startup School."
+        ],
+        replies: [
+            { label: "Marketing",          next: "marketing_main"        },
+            { label: "Growth",             next: "growth_main"           },
+            { label: "BD & Partnerships",  next: "bd_main"               },
+            { label: "Recognition",        next: "recognition"           },
+            { label: "Entrepreneurship",   next: "entrepreneurship_main" }
+        ]
+    }
+};
+
+// ENGINE
+const messagesEl = document.getElementById('messages');
+const repliesEl  = document.getElementById('replies');
+let busy = false;
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function scrollBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
+
+function formatText(t) {
+    return t
+        .replace(/\n/g, '<br>')
+        .replace(/thesabnis@gmail\.com/g,
+            '<a href="mailto:thesabnis@gmail.com">thesabnis@gmail.com</a>')
+        .replace(/linkedin\.com\/in\/atharvasabnis/g,
+            '<a href="https://linkedin.com/in/atharvasabnis" target="_blank">linkedin.com/in/atharvasabnis</a>')
+        .replace(/\+971 55 116 6906/g,
+            '<a href="tel:+971551166906">+971 55 116 6906</a>');
+}
+
+function addBubble(text, type) {
+    const wrap = document.createElement('div');
+    wrap.className = `message ${type}`;
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = formatText(text);
+    wrap.appendChild(bubble);
+    messagesEl.appendChild(wrap);
+    scrollBottom();
+}
+
+function showTyping() {
+    const wrap = document.createElement('div');
+    wrap.className = 'typing-wrap';
+    wrap.id = 'typing';
+    wrap.innerHTML = `<div class="typing"><span></span><span></span><span></span></div>`;
+    messagesEl.appendChild(wrap);
+    scrollBottom();
+}
+
+function hideTyping() {
+    const el = document.getElementById('typing');
+    if (el) el.remove();
+}
+
+async function playMessages(msgs) {
+    for (let i = 0; i < msgs.length; i++) {
+        showTyping();
+        const delay = Math.max(500, Math.min(msgs[i].length * 19, 1500));
+        await sleep(delay);
+        hideTyping();
+        addBubble(msgs[i], 'bot');
+        if (i < msgs.length - 1) await sleep(200);
+    }
+}
+
+function showReplies(replies) {
+    repliesEl.innerHTML = '';
+    replies.forEach(r => {
+        const btn = document.createElement('button');
+        btn.className = 'reply-btn';
+        btn.textContent = r.label;
+        btn.addEventListener('click', () => handleReply(r));
+        repliesEl.appendChild(btn);
+    });
+    // Always show a way back — unless we're already at the top-level persona selector
+    const atTop = replies.some(r =>
+        r.next === 'founder_intro' || r.next === 'recruiter_intro' || r.next === 'hm_intro'
+    );
+    if (!atTop) {
+        const home = document.createElement('button');
+        home.className = 'reply-btn home-btn';
+        home.textContent = '↩ start over';
+        home.addEventListener('click', () => handleReply({ label: '↩ start over', next: 'intro' }));
+        repliesEl.appendChild(home);
+    }
+}
+
+async function handleReply(reply) {
+    if (busy) return;
+    busy = true;
+    repliesEl.innerHTML = '';
+    addBubble(reply.label, 'user');
+    await sleep(300);
+    const scene = data[reply.next];
+    await playMessages(scene.messages);
+    showReplies(scene.replies);
+    busy = false;
+}
+
+async function start() {
+    busy = true;
+    await sleep(400);
+    await playMessages(data.intro.messages);
+    showReplies(data.intro.replies);
+    busy = false;
+}
+
+function restart() {
+    if (busy) return;
+    messagesEl.innerHTML = '';
+    repliesEl.innerHTML = '';
+    start();
+}
+
+start();
+</script>
+</body>
+</html>
